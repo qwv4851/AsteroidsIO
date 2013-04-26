@@ -4,7 +4,6 @@ var app = require('express')(),
 
 var game = require('./client');
 
-
 server.listen(80);
 
 app.get('/', function(req, res) {
@@ -21,21 +20,12 @@ var bulletId = 0;
 var bulletLifetime = 3000;
 
 io.sockets.on('connection', function(socket) {
+	if (Object.keys(clients).length === 0) {
+		io.sockets.emit('reset');
+	}
+
 	clients[socket.id] = {
-		ship: {
-			angle: 0,
-			pos: {
-				x: 40,
-				y: 40
-			},
-			velocity: {
-				x: 0,
-				y: 0
-			},
-			speed: 0.1,
-			rotSpeed: 0.2,
-			maxSpeed: 10
-		}
+		ship: new game.Ship()
 	};
 	addShip(socket.id, clients[socket.id].ship);
 

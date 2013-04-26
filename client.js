@@ -1,36 +1,75 @@
 var canvas;
 var ctx;
 var fps = 30;
-var ships = {};
-var bullets = [];
+var ships;
+var bullets;
 var socket;
 var bounds = {
 	width: 400,
 	height: 400
 };
 
+function Ship() {
+	this.angle = 0;
+	this.pos = {
+		x: 40,
+		y: 40
+	};
+	this.velocity = {
+		x: 0,
+		y: 0
+	};
+	this.speed = 0.1,
+	this.rotSpeed = 0.2;
+	this.maxSpeed = 10;
+}
+
 var localShip;
-// localShip = {
-// 	angle: 0,
-// 	pos: {
-// 		x: 40,
-// 		y: 40
-// 	},
-// 	velocity: {
-// 		x: 0,
-// 		y: 0
-// 	},
-// 	speed: 0.1,
-// 	rotSpeed: 0.2,
-// 	maxSpeed: 10
-// };
-// ships["localShip"] = localShip;
+resetGame();
 if (typeof(window) != "undefined") window.onload = function() {
 
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
 	ctx.fillStyle = "white";
 
+	initSocket();
+
+	window.addEventListener('keydown', function(event) {
+		switch (event.keyCode) {
+			case 32:
+				if (socket) socket.emit("shoot");
+				if (localShip) shoot(localShip);
+				break;
+			case 37:
+				if (socket) socket.emit("moveLeft");
+				if (localShip) moveLeft(localShip);
+				break;
+			case 38:
+				if (socket) socket.emit("moveUp");
+				if (localShip) moveUp(localShip);
+				break;
+			case 39:
+				if (socket) socket.emit("moveRight");
+				if (localShip) moveRight(localShip);
+				break;
+			case 40:
+				if (socket) socket.emit("moveDown");
+				if (localShip) moveDown(localShip);
+				break;
+		}
+	}, false);
+
+	setInterval(update, 1000 / fps);
+};
+
+function resetGame() {
+	ships = {};
+	bullets = [];
+	localShip = new Ship();
+	ships["localShip"] = localShip;
+}
+
+function initSocket() {
 	socket = io.connect();
 	socket.on('removeShip', function(id) {
 		delete ships[id];
@@ -44,37 +83,8 @@ if (typeof(window) != "undefined") window.onload = function() {
 	socket.on('removeBullet', function(id) {
 		delete bullets[id];
 	});
-
-	window.addEventListener('keydown', function(event) {
-		switch (event.keyCode) {
-			case 32:
-				socket.emit("shoot");
-				//if (localShip)
-				//shoot(localShip);
-				break;
-			case 37:
-				socket.emit("moveLeft");
-				if (localShip) moveLeft(localShip);
-				break;
-			case 38:
-				socket.emit("moveUp");
-				if (localShip) moveUp(localShip);
-				break;
-			case 39:
-				socket.emit("moveRight");
-				if (localShip) moveRight(localShip);
-				break;
-			case 40:
-				socket.emit("moveDown");
-				if (localShip) moveDown(localShip);
-				break;
-		}
-	}, false);
-
-	setInterval(update, 1000 / fps);
-};
-
-
+	socket.on('reset', resetGame);
+}
 
 function update() {
 	ctx.beginPath();
@@ -189,6 +199,7 @@ function clamp(x, min, max) {
 
 function drawShip(pos, angle, color) {
 	ctx.strokeStyle = color;
+	ctx.beginPath();
 	var scale = 2;
 	var p = [{
 		x: -3,
@@ -241,5 +252,6 @@ if (typeof(module) != "undefined") module.exports = {
 	bounds: bounds,
 	shoot: shoot,
 	updateShip: updateShip,
-	updateBullet: updateBullet
+	updateBullet: updateBullet,
+	Ship: Ship
 };
