@@ -8,6 +8,8 @@ var bounds = {
 	width: 400,
 	height: 400
 };
+var localShip;
+var keys = [];
 
 function Ship() {
 	this.angle = 0;
@@ -24,39 +26,18 @@ function Ship() {
 	this.maxSpeed = 10;
 }
 
-var localShip;
-resetGame();
 if (typeof(window) != "undefined") window.onload = function() {
-
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
 	ctx.fillStyle = "white";
-
+	resetGame();
 	initSocket();
 
 	window.addEventListener('keydown', function(event) {
-		switch (event.keyCode) {
-			case 32:
-				if (socket) socket.emit("shoot");
-				if (localShip) shoot(localShip);
-				break;
-			case 37:
-				if (socket) socket.emit("moveLeft");
-				if (localShip) moveLeft(localShip);
-				break;
-			case 38:
-				if (socket) socket.emit("moveUp");
-				if (localShip) moveUp(localShip);
-				break;
-			case 39:
-				if (socket) socket.emit("moveRight");
-				if (localShip) moveRight(localShip);
-				break;
-			case 40:
-				if (socket) socket.emit("moveDown");
-				if (localShip) moveDown(localShip);
-				break;
-		}
+		keys[event.keyCode] = true;
+	}, false);
+	window.addEventListener('keyup', function(event) {
+		keys[event.keyCode] = false;
 	}, false);
 
 	setInterval(updateLoop, 0);
@@ -124,8 +105,34 @@ function drawBullets() {
 }
 
 function update() {
+	updateInput();
 	updateShips();
 	updateBullets();
+}
+
+function updateInput() {
+	if (keys[32]) {
+		if (socket) socket.emit("shoot");
+		if (localShip) shoot(localShip);
+	}
+	if (keys[37]) {
+		if (socket) socket.emit("moveLeft");
+		if (localShip) moveLeft(localShip);
+	}
+	if (keys[38]) {
+		if (socket) socket.emit("moveUp");
+		if (localShip) moveUp(localShip);
+	}
+
+	if (keys[39]) {
+		if (socket) socket.emit("moveRight");
+		if (localShip) moveRight(localShip);
+	}
+
+	if (keys[40]) {
+		if (socket) socket.emit("moveDown");
+		if (localShip) moveDown(localShip);
+	}
 }
 
 function updateShips() {
