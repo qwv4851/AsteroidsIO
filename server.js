@@ -2,6 +2,8 @@ var app = require('express')(),
 	server = require('http').createServer(app),
 	io = require('socket.io').listen(server);
 
+io.set('log level', 1);
+
 var game = require('./client');
 
 server.listen(80);
@@ -28,6 +30,7 @@ io.sockets.on('connection', function(socket) {
 		ship: new game.Ship()
 	};
 	addShip(socket.id, clients[socket.id].ship);
+	socket.emit('setMyShip', socket.id);
 
 	socket.on('disconnect', function() {
 		io.sockets.emit("removeShip", socket.id);
@@ -111,6 +114,22 @@ function updateShips() {
 
 function updateBullets() {
 	for (var i in bullets) {
+		var bullet = bullets[i];
 		game.updateBullet(bullets[i]);
+		checkCollision(bullet, i);
+	}
+}
+
+function checkCollision(bullet, id) {
+	for (var j in clients) {
+		var ship = clients[j].ship;
+		if (bullet.owner === ship) continue;
+		if (game.pointInRect(bullet.pos, game.getBounds(ship, 10))) {
+			removeBullet(id);
+			game.damageShip(ship, bullet.damage);
+			if (ship.life <= 0) {
+				game.respawnShip(ship);
+			}
+		}
 	}
 }

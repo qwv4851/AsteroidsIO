@@ -9,13 +9,14 @@ var bounds = {
 	height: 400
 };
 var localShip;
+var myId;
 var keys = [];
 
 function Ship() {
 	this.angle = 0;
 	this.pos = {
-		x: 40,
-		y: 40
+		x: 200,
+		y: 200
 	};
 	this.velocity = {
 		x: 0,
@@ -24,6 +25,17 @@ function Ship() {
 	this.speed = 0.2,
 	this.rotSpeed = 0.2;
 	this.maxSpeed = 10;
+	this.maxLife = 100;
+	this.life = this.maxLife;
+}
+
+function Bullet(ship) {
+	this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
+	this.angle = ship.angle;
+	this.speed = 12;
+	this.scale = 3;
+	this.owner = ship;
+	this.damage = 10;
 }
 
 if (typeof(window) != "undefined") window.onload = function() {
@@ -31,7 +43,8 @@ if (typeof(window) != "undefined") window.onload = function() {
 	ctx = canvas.getContext("2d");
 	ctx.fillStyle = "white";
 	resetGame();
-	initSocket();
+
+	if (typeof(io) != "undefined") initSocket();
 
 	window.addEventListener('keydown', function(event) {
 		keys[event.keyCode] = true;
@@ -44,10 +57,11 @@ if (typeof(window) != "undefined") window.onload = function() {
 };
 
 function resetGame() {
+	myId = undefined;
 	ships = {};
 	bullets = [];
-	localShip = new Ship();
-	ships["localShip"] = localShip;
+	// localShip = new Ship();
+	// ships["localShip"] = localShip;
 }
 
 function initSocket() {
@@ -65,6 +79,9 @@ function initSocket() {
 		delete bullets[id];
 	});
 	socket.on('reset', resetGame);
+	socket.on('setMyShip', function(id) {
+		myId = id;
+	});
 }
 
 updateLoop = (function() {
@@ -88,6 +105,7 @@ function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	drawShips();
 	drawBullets();
+	if (myId) drawLifebar(ships[myId]);
 }
 
 function drawShips() {
@@ -98,7 +116,31 @@ function drawShips() {
 	}
 }
 
+function drawLifebar(ship) {
+	var bounds = {
+		x: 10,
+		y: 10,
+		width: 150,
+		height: 20
+	};
+	var grd = ctx.createLinearGradient(0, 0, bounds.width, 0);
+	ctx.strokeStyle = "#fff";
+	var percent = ship.life / ship.maxLife;
+	if (percent < 0.5) {
+		grd.addColorStop(0, "#400");
+		grd.addColorStop(1, "#f00");
+	} else {
+		grd.addColorStop(0, "#040");
+		grd.addColorStop(1, "#0f0");
+	}
+
+	ctx.fillStyle = grd;
+	ctx.fillRect(bounds.x, bounds.y, bounds.width * percent, bounds.height);
+	ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+}
+
 function drawBullets() {
+	ctx.fillStyle = "white";
 	for (var i in bullets) {
 		drawBullet(bullets[i]);
 	}
@@ -123,12 +165,10 @@ function updateInput() {
 		if (socket) socket.emit("moveUp");
 		if (localShip) moveUp(localShip);
 	}
-
 	if (keys[39]) {
 		if (socket) socket.emit("moveRight");
 		if (localShip) moveRight(localShip);
 	}
-
 	if (keys[40]) {
 		if (socket) socket.emit("moveDown");
 		if (localShip) moveDown(localShip);
@@ -160,6 +200,19 @@ function updateBullet(bullet) {
 	fixBounds(bullet.pos);
 }
 
+function getBounds(ship, offset) {
+	return {
+		left: ship.pos.x - offset,
+		top: ship.pos.y - offset,
+		right: ship.pos.x + offset,
+		bottom: ship.pos.y + offset
+	};
+}
+
+function pointInRect(p, r) {
+	return p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
+}
+
 function drawBullet(bullet) {
 	ctx.fillRect(bullet.pos.x - 2, bullet.pos.y - 2, bullet.scale, bullet.scale);
 }
@@ -183,13 +236,7 @@ function moveDown(ship) {
 }
 
 function shoot(ship) {
-	var bullet = {
-		pos: addVec(clone(ship.pos), rotateScalar(5, ship.angle)),
-		angle: ship.angle,
-		speed: 12,
-		scale: 3
-	};
-	return bullet;
+	return new Bullet(ship);
 }
 
 function fixBounds(pos) {
@@ -275,6 +322,16 @@ function clone(o) {
 	};
 }
 
+function damageShip(ship, damage) {
+	ship.life -= damage;
+	ship.life = clamp(ship.life, 0, ship.maxLife);
+}
+
+function respawnShip(ship) {
+	ship.life = ship.maxLife;
+	ship.pos = {x:200, y:200};
+}
+
 if (typeof(module) != "undefined") module.exports = {
 	moveLeft: moveLeft,
 	moveRight: moveRight,
@@ -292,5 +349,9 @@ if (typeof(module) != "undefined") module.exports = {
 	shoot: shoot,
 	updateShip: updateShip,
 	updateBullet: updateBullet,
-	Ship: Ship
+	Ship: Ship,
+	getBounds: getBounds,
+	pointInRect: pointInRect,
+	damageShip: damageShip,
+	respawnShip: respawnShip
 };
