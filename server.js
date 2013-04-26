@@ -69,8 +69,23 @@ io.sockets.on('connection', function(socket) {
 		addShip(socket.id, ship);
 	});
 
-	setInterval(update, 1000 / game.fps);
+	setInterval(updateLoop, 0);
 });
+
+updateLoop = (function() {
+	var loops = 0,
+		skipTicks = 1000 / game.fps,
+		maxFrameSkip = 10,
+		nextGameTick = new Date().getTime();
+	return function() {
+		loops = 0;
+		while (new Date().getTime() > nextGameTick && loops < maxFrameSkip) {
+			update();
+			nextGameTick += skipTicks;
+			loops++;
+		}
+	};
+})();
 
 function addShip(id, ship) {
 	io.sockets.emit('addShip', id, ship);

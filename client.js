@@ -19,7 +19,7 @@ function Ship() {
 		x: 0,
 		y: 0
 	};
-	this.speed = 0.1,
+	this.speed = 0.2,
 	this.rotSpeed = 0.2;
 	this.maxSpeed = 10;
 }
@@ -59,7 +59,7 @@ if (typeof(window) != "undefined") window.onload = function() {
 		}
 	}, false);
 
-	setInterval(update, 1000 / fps);
+	setInterval(updateLoop, 0);
 };
 
 function resetGame() {
@@ -86,9 +86,44 @@ function initSocket() {
 	socket.on('reset', resetGame);
 }
 
-function update() {
+updateLoop = (function() {
+	var loops = 0,
+		skipTicks = 1000 / fps,
+		maxFrameSkip = 10,
+		nextGameTick = new Date().getTime();
+	return function() {
+		loops = 0;
+		while (new Date().getTime() > nextGameTick && loops < maxFrameSkip) {
+			update();
+			nextGameTick += skipTicks;
+			loops++;
+		}
+		if (loops) draw();
+	};
+})();
+
+function draw() {
 	ctx.beginPath();
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	drawShips();
+	drawBullets();
+}
+
+function drawShips() {
+	for (var i in ships) {
+		var ship = ships[i];
+		var color = i == "localShip" ? "red" : "white";
+		drawShip(ship.pos, ship.angle, color);
+	}
+}
+
+function drawBullets() {
+	for (var i in bullets) {
+		drawBullet(bullets[i]);
+	}
+}
+
+function update() {
 	updateShips();
 	updateBullets();
 }
@@ -97,8 +132,6 @@ function updateShips() {
 	for (var i in ships) {
 		var ship = ships[i];
 		updateShip(ship);
-		var color = i == "localShip" ? "red" : "white";
-		drawShip(ship.pos, ship.angle, color);
 	}
 }
 
@@ -111,7 +144,6 @@ function updateBullets() {
 	for (var i in bullets) {
 		var bullet = bullets[i];
 		updateBullet(bullet);
-		drawBullet(bullet);
 	}
 }
 
