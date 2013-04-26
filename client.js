@@ -27,6 +27,7 @@ function Ship() {
 	this.maxSpeed = 10;
 	this.maxLife = 100;
 	this.life = this.maxLife;
+	this.color = "#fff";
 }
 
 function Bullet(ship) {
@@ -35,7 +36,7 @@ function Bullet(ship) {
 	this.speed = 12;
 	this.scale = 3;
 	this.owner = ship;
-	this.damage = 10;
+	this.damage = 1;
 }
 
 if (typeof(window) != "undefined") window.onload = function() {
@@ -111,7 +112,7 @@ function draw() {
 function drawShips() {
 	for (var i in ships) {
 		var ship = ships[i];
-		var color = i == "localShip" ? "red" : "white";
+		var color = i == "localShip" ? "red" : ship.color;
 		drawShip(ship.pos, ship.angle, color);
 	}
 }
@@ -214,6 +215,7 @@ function pointInRect(p, r) {
 }
 
 function drawBullet(bullet) {
+	ctx.fillStyle = bullet.owner.color;
 	ctx.fillRect(bullet.pos.x - 2, bullet.pos.y - 2, bullet.scale, bullet.scale);
 }
 

@@ -20,6 +20,8 @@ var clients = {};
 var bullets = [];
 var bulletId = 0;
 var bulletLifetime = 3000;
+var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
+var colorIndex = 0;
 
 io.sockets.on('connection', function(socket) {
 	if (Object.keys(clients).length === 0) {
@@ -29,6 +31,7 @@ io.sockets.on('connection', function(socket) {
 	clients[socket.id] = {
 		ship: new game.Ship()
 	};
+	clients[socket.id].ship.color = colors[colorIndex++ % colors.length];
 	addShip(socket.id, clients[socket.id].ship);
 	socket.emit('setMyShip', socket.id);
 
