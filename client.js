@@ -4,6 +4,10 @@ var fps = 30;
 var ships = {};
 var bullets = [];
 var socket;
+var bounds = {
+	width: 400,
+	height: 400
+};
 
 var localShip;
 // localShip = {
@@ -21,8 +25,7 @@ var localShip;
 // 	maxSpeed: 10
 // };
 // ships["localShip"] = localShip;
-
-window.onload = function() {
+if (typeof(window) != "undefined") window.onload = function() {
 
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
@@ -47,27 +50,23 @@ window.onload = function() {
 			case 32:
 				socket.emit("shoot");
 				//if (localShip)
-					//shoot(localShip);
+				//shoot(localShip);
 				break;
 			case 37:
 				socket.emit("moveLeft");
-				if (localShip)
-					moveLeft(localShip);
+				if (localShip) moveLeft(localShip);
 				break;
 			case 38:
 				socket.emit("moveUp");
-				if (localShip)
-					moveUp(localShip);
+				if (localShip) moveUp(localShip);
 				break;
 			case 39:
 				socket.emit("moveRight");
-				if (localShip)
-					moveRight(localShip);
+				if (localShip) moveRight(localShip);
 				break;
 			case 40:
 				socket.emit("moveDown");
-				if (localShip)
-					moveDown(localShip);
+				if (localShip) moveDown(localShip);
 				break;
 		}
 	}, false);
@@ -87,22 +86,29 @@ function update() {
 function updateShips() {
 	for (var i in ships) {
 		var ship = ships[i];
-
+		updateShip(ship);
 		var color = i == "localShip" ? "red" : "white";
 		drawShip(ship.pos, ship.angle, color);
-		addVec(ship.pos, ship.velocity);
-		fixBounds(ship.pos);
 	}
+}
+
+function updateShip(ship) {
+	addVec(ship.pos, ship.velocity);
+	fixBounds(ship.pos);
 }
 
 function updateBullets() {
 	for (var i in bullets) {
 		var bullet = bullets[i];
-		var r = rotateScalar(bullet.speed, bullet.angle);
-		addVec(bullet.pos, r);
-		fixBounds(bullet.pos);
+		updateBullet(bullet);
 		drawBullet(bullet);
 	}
+}
+
+function updateBullet(bullet) {
+	var r = rotateScalar(bullet.speed, bullet.angle);
+	addVec(bullet.pos, r);
+	fixBounds(bullet.pos);
 }
 
 function drawBullet(bullet) {
@@ -127,21 +133,21 @@ function moveDown(ship) {
 	clampVec(ship.velocity, -ship.maxSpeed, ship.maxSpeed);
 }
 
-function shoot() {
+function shoot(ship) {
 	var bullet = {
 		pos: addVec(clone(ship.pos), rotateScalar(5, ship.angle)),
 		angle: ship.angle,
 		speed: 12,
 		scale: 3
 	};
-	bullets.push(bullet);
+	return bullet;
 }
 
 function fixBounds(pos) {
-	if (pos.x < 0) pos.x = canvas.width;
-	else if (pos.x > canvas.width) pos.x = 0;
-	if (pos.y < 0) pos.y = canvas.height;
-	else if (pos.y > canvas.height) pos.y = 0;
+	if (pos.x < 0) pos.x = bounds.width;
+	else if (pos.x > bounds.width) pos.x = 0;
+	if (pos.y < 0) pos.y = bounds.height;
+	else if (pos.y > bounds.height) pos.y = 0;
 }
 
 function addVec(v0, v1) {
@@ -218,3 +224,22 @@ function clone(o) {
 		y: o.y
 	};
 }
+
+if (typeof(module) != "undefined") module.exports = {
+	moveLeft: moveLeft,
+	moveRight: moveRight,
+	moveUp: moveUp,
+	moveDown: moveDown,
+	addVec: addVec,
+	clampVec: clampVec,
+	clamp: clamp,
+	rotateVec: rotateVec,
+	rotateScalar: rotateScalar,
+	fixBounds: fixBounds,
+	clone: clone,
+	fps: fps,
+	bounds: bounds,
+	shoot: shoot,
+	updateShip: updateShip,
+	updateBullet: updateBullet
+};
