@@ -2,10 +2,19 @@
 <head>
 	<title>Asteroids IO</title>
 	<script src="/socket.io/socket.io.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 	<script src="client.js"></script>
+	<script src="chat.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body style="background:black; color:white;">
-	<canvas id="myCanvas" width="400" height="400" style="border:2px solid #fff;"></canvas><p>
-	Use the <b>arrow keys</b> to move and <b>spacebar</b> to shoot.
+	<canvas id="myCanvas" width="400" height="400"></canvas><br>
+	<span>Instructions: Use the <b>arrow keys</b> to move and <b>spacebar</b> to shoot
+	</span><br>
+	<span>Name:</span><input id="nameField" value="Anonymous"></input><button id="hideChatBtn">Hide Chat</button><br>
+	<div id="chatDiv">
+		<textarea id="messageArea" readonly="true"></textarea><br>
+		<input id="messageField"></input><button id="sendBtn">Send</button>
+	</div>
 </body>
 </html>

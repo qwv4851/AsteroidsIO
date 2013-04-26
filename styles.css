@@ -1,0 +1,20 @@
+#messageArea {
+	width: 404px;
+	height: 102px;
+	resize:none;
+	margin: 0;
+	background: black;
+	color: white;
+	border: 2px solid
+}
+
+#messageField {
+	background: black;
+	color: white;
+	border: 2px solid;
+	width: 404px;
+}
+
+#myCanvas {
+	border: 2px solid #fff;
+}

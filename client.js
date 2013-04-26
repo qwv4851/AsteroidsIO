@@ -1,3 +1,5 @@
+var debug = true;
+
 var canvas;
 var ctx;
 var fps = 30;
@@ -39,7 +41,7 @@ function Bullet(ship) {
 	this.damage = 1;
 }
 
-if (typeof(window) != "undefined") window.onload = function() {
+if (typeof(document) != "undefined") $(document).ready(function() {
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
 	ctx.fillStyle = "white";
@@ -55,14 +57,16 @@ if (typeof(window) != "undefined") window.onload = function() {
 	}, false);
 
 	setInterval(updateLoop, 0);
-};
+});
 
 function resetGame() {
 	myId = undefined;
 	ships = {};
 	bullets = [];
-	// localShip = new Ship();
-	// ships["localShip"] = localShip;
+	if (debug) {
+		localShip = new Ship();
+		ships["localShip"] = localShip;
+	}
 }
 
 function initSocket() {
@@ -331,7 +335,10 @@ function damageShip(ship, damage) {
 
 function respawnShip(ship) {
 	ship.life = ship.maxLife;
-	ship.pos = {x:200, y:200};
+	ship.pos = {
+		x: 200,
+		y: 200
+	};
 }
 
 if (typeof(module) != "undefined") module.exports = {

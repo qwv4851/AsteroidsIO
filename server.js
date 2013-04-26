@@ -75,6 +75,10 @@ io.sockets.on('connection', function(socket) {
 		addShip(socket.id, ship);
 	});
 
+	socket.on('message', function(message) {
+		socket.broadcast.send(message);
+	});
+
 	setInterval(updateLoop, 0);
 });
 
