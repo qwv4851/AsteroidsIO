@@ -1,16 +1,21 @@
 var debug = true;
 
+// Gameplay variables and constants
+var localShip;
+var ships;
+var bullets;
+var bulletTimeout = 250;
+
+// Implementation variables and constants
 var canvas;
 var ctx;
 var fps = 30;
-var ships;
-var bullets;
+var dt = 1 / fps;
 var socket;
 var bounds = {
 	width: 400,
 	height: 400
 };
-var localShip;
 var myId;
 var keys = [];
 
@@ -30,6 +35,7 @@ function Ship() {
 	this.maxLife = 100;
 	this.life = this.maxLife;
 	this.color = "#fff";
+	this.canFire = true;
 }
 
 function Bullet(ship) {
@@ -158,9 +164,15 @@ function update() {
 }
 
 function updateInput() {
-	if (keys[32]) {
-		if (socket) socket.emit("shoot");
-		if (localShip) shoot(localShip);
+	if (localShip.canFire) {
+		if (keys[32]) {
+			setTimeout(function() {
+				localShip.canFire = true;
+			}, bulletTimeout);
+			if (socket) socket.emit("shoot");
+			if (localShip) shoot(localShip);
+			localShip.canFire = false;
+		}
 	}
 	if (keys[37]) {
 		if (socket) socket.emit("moveLeft");
