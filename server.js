@@ -19,8 +19,11 @@ app.get(/^(.+)$/, function(req, res) {
 // Global setting variables
 var clients = {};
 var bullets = [];
+var bombs = [];
 var bulletId = 0;
+var bombId = 0;
 var bulletLifetime = 500;
+var bombLifeTime = 1000;
 var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
 var colorIndex = 0;
 
@@ -49,7 +52,18 @@ io.sockets.on('connection', function(socket) {
 		io.sockets.emit("addBullet", id, bullet);
 		setTimeout(function() {
 			removeBullet(id);
-		}, bulletLifetime);
+		}, bombLifeTime);
+	});
+
+	socket.on('shootBomb', function() {
+		var ship = clients[socket.id].ship;
+		var bomb = game.shootBomb(ship);
+		var id = bombId++;
+		bombs[id] = bomb;
+		io.sockets.emit("addBomb", id, bomb);
+		setTimeout(function() {
+			removeBomb(id);
+		}, bombLifeTime);
 	});
 
 	socket.on('moveLeft', function() {
@@ -101,6 +115,11 @@ function addShip(id, ship) {
 function removeBullet(id) {
 	delete bullets[id];
 	io.sockets.emit("removeBullet", id);
+}
+
+function removeBomb(id) {
+	delete bombs[id];
+	io.sockets.emit("removeBomb", id);
 }
 
 function update() {

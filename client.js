@@ -4,8 +4,11 @@ var debug = false;
 var localShip;
 var ships;
 var bullets;
+var bombs;
 var bulletTimeout = 250;
+var bombTimeout = 2500;
 var canFire = true;
+var canFireBomb = true;
 
 // Implementation variables and constants
 var canvas;
@@ -47,6 +50,14 @@ function Bullet(ship) {
 	this.damage = 1;
 }
 
+function Bomb(ship) {
+	this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
+	this.angle = ship.angle;
+	this.speed = 6;
+	this.scale = 5;
+	this.owner = ship;
+}
+
 if (typeof(document) != "undefined") $(document).ready(function() {
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
@@ -69,6 +80,7 @@ function resetGame() {
 	myId = undefined;
 	ships = {};
 	bullets = [];
+	bombs = [];
 	if (debug) {
 		localShip = new Ship();
 		ships["localShip"] = localShip;
@@ -77,18 +89,34 @@ function resetGame() {
 
 function initSocket() {
 	socket = io.connect();
+
+	// Ship
 	socket.on('removeShip', function(id) {
 		delete ships[id];
 	});
 	socket.on('addShip', function(id, ship) {
 		ships[id] = ship;
 	});
+
+	// Bullet
 	socket.on('addBullet', function(id, bullet) {
 		bullets[id] = bullet;
 	});
 	socket.on('removeBullet', function(id) {
 		delete bullets[id];
 	});
+
+	// Bomb
+	socket.on('addBomb', function(id, bomb) {
+		bombs[id] = bomb;
+	});
+	socket.on('removeBomb', function(id) {
+		delete bombs[id];
+		// TODO
+		// Create multiple bullets here
+	});
+
+	// Other
 	socket.on('reset', resetGame);
 	socket.on('setMyShip', function(id) {
 		myId = id;
@@ -116,6 +144,7 @@ function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	drawShips();
 	drawBullets();
+	drawBombs();
 	if (myId) drawLifebar(ships[myId]);
 }
 
@@ -157,10 +186,18 @@ function drawBullets() {
 	}
 }
 
+function drawBombs() {
+	ctx.fillStyle = "white";
+	for (var i in bombs) {
+		drawBomb(bombs[i]);
+	}
+}
+
 function update() {
 	updateInput();
 	updateShips();
 	updateBullets();
+	updateBombs();
 }
 
 function updateInput() {
@@ -190,6 +227,17 @@ function updateInput() {
 		if (socket) socket.emit("moveDown");
 		if (localShip) moveDown(localShip);
 	}
+
+	if(canFireBomb) {
+		if (keys[66]) {
+			setTimeout(function() {
+				canFireBomb = true;
+			}, bombTimeout);
+			if (socket) socket.emit("shootBomb");
+			if (localShip) shootBomb(localShip);
+			canFireBomb = false;
+		}
+	}
 }
 
 function updateShips() {
@@ -211,10 +259,23 @@ function updateBullets() {
 	}
 }
 
+function updateBombs() {
+	for (var i in bombs) {
+		var bomb = bombs[i];
+		updateBomb(bomb);
+	}
+}
+
 function updateBullet(bullet) {
 	var r = rotateScalar(bullet.speed, bullet.angle);
 	addVec(bullet.pos, r);
 	fixBounds(bullet.pos);
+}
+
+function updateBomb(bomb) {
+	var r = rotateScalar(bomb.speed, bomb.angle);
+	addVec(bomb.pos, r);
+	fixBounds(bomb.pos);
 }
 
 function getBounds(ship, offset) {
@@ -234,9 +295,21 @@ function drawBullet(bullet) {
 	ctx.save();
 	ctx.fillStyle = bullet.owner.color;
 	ctx.beginPath();
-	ctx.arc(bullet.pos.x, bullet.pos.y, 3, 0, 2 * Math.PI, false);
+	ctx.arc(bullet.pos.x, bullet.pos.y, bullet.scale, 0, 2 * Math.PI, false);
 	ctx.strokeStyle = 'white';
-	ctx.lineWidth = 2;
+	ctx.lineWidth = Math.max(bullet.scale / 2, 2);
+	ctx.stroke();
+	ctx.fill();
+	ctx.restore();
+}
+
+function drawBomb(bomb) {
+	ctx.save();
+	ctx.fillStyle = bomb.owner.color;
+	ctx.beginPath();
+	ctx.arc(bomb.pos.x, bomb.pos.y, bomb.scale, 0, 2 * Math.PI, false);
+	ctx.strokeStyle = 'white';
+	ctx.lineWidth = Math.max(bomb.scale / 2, 2);
 	ctx.stroke();
 	ctx.fill();
 	ctx.restore();
@@ -262,6 +335,10 @@ function moveDown(ship) {
 
 function shoot(ship) {
 	return new Bullet(ship);
+}
+
+function shootBomb(ship) {
+	return new Bomb(ship);
 }
 
 function fixBounds(pos) {
@@ -375,6 +452,7 @@ if (typeof(module) != "undefined") module.exports = {
 	fps: fps,
 	bounds: bounds,
 	shoot: shoot,
+	shootBomb: shootBomb,
 	updateShip: updateShip,
 	updateBullet: updateBullet,
 	Ship: Ship,
