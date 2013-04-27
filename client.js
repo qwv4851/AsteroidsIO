@@ -5,8 +5,6 @@ var localShip;
 var ships;
 var bullets;
 var bombs;
-var bulletTimeout = 250;
-var bombTimeout = 2500;
 var canFire = true;
 var canFireBomb = true;
 
@@ -39,6 +37,8 @@ function Ship() {
 	this.maxLife = 10;
 	this.life = this.maxLife;
 	this.color = "#fff";
+	this.canFire = true;
+	this.canFireBomb = true;
 }
 
 function Bullet(ship) {
@@ -48,6 +48,7 @@ function Bullet(ship) {
 	this.scale = 3;
 	this.owner = ship;
 	this.damage = 1;
+	this.timeout = 250;
 }
 
 function Bomb(ship) {
@@ -56,6 +57,7 @@ function Bomb(ship) {
 	this.speed = 6;
 	this.scale = 5;
 	this.owner = ship;
+	this.timeout = 2500;
 }
 
 if (typeof(document) != "undefined") $(document).ready(function() {
@@ -68,9 +70,11 @@ if (typeof(document) != "undefined") $(document).ready(function() {
 
 	window.addEventListener('keydown', function(event) {
 		keys[event.keyCode] = true;
+		socket.emit('keydown', event.keyCode);
 	}, false);
 	window.addEventListener('keyup', function(event) {
 		keys[event.keyCode] = false;
+		socket.emit('keyup', event.keyCode);
 	}, false);
 
 	setInterval(updateLoop, 0);
@@ -194,49 +198,29 @@ function drawBombs() {
 }
 
 function update() {
-	updateInput();
+	if (localShip) updateInput(keys, localShip);
 	updateShips();
 	updateBullets();
 	updateBombs();
 }
 
-function updateInput() {
-	if (canFire) {
-		if (keys[32]) {
-			setTimeout(function() {
-				canFire = true;
-			}, bulletTimeout);
-			if (socket) socket.emit("shoot");
-			if (localShip) shoot(localShip);
-			canFire = false;
-		}
-	}
+function updateInput(keys, ship) {
+
 	if (keys[37]) {
-		if (socket) socket.emit("moveLeft");
-		if (localShip) moveLeft(localShip);
-	}
-	if (keys[38]) {
-		if (socket) socket.emit("moveUp");
-		if (localShip) moveUp(localShip);
+		moveLeft(ship, dt);
 	}
 	if (keys[39]) {
-		if (socket) socket.emit("moveRight");
-		if (localShip) moveRight(localShip);
+		moveRight(ship, dt);
 	}
-	if (keys[40]) {
-		if (socket) socket.emit("moveDown");
-		if (localShip) moveDown(localShip);
-	}
-
-	if (canFireBomb) {
-		if (keys[66]) {
-			setTimeout(function() {
-				canFireBomb = true;
-			}, bombTimeout);
-			if (socket) socket.emit("shootBomb");
-			if (localShip) shootBomb(localShip);
-			canFireBomb = false;
-		}
+	if (keys[38]) {
+		moveUp(ship, dt);
+	} else if (keys[40]) {
+		moveDown(ship, dt);
+	} else {
+		ship.accel = {
+			x: 0,
+			y: 0
+		};
 	}
 }
 
@@ -331,14 +315,6 @@ function moveUp(ship) {
 function moveDown(ship) {
 	addVec(ship.velocity, rotateScalar(-ship.speed, ship.angle));
 	clampVec(ship.velocity, -ship.maxSpeed, ship.maxSpeed);
-}
-
-function shoot(ship) {
-	return new Bullet(ship);
-}
-
-function shootBomb(ship) {
-	return new Bomb(ship);
 }
 
 function fixBounds(pos) {
@@ -451,13 +427,14 @@ if (typeof(module) != "undefined") module.exports = {
 	clone: clone,
 	fps: fps,
 	bounds: bounds,
-	shoot: shoot,
-	shootBomb: shootBomb,
 	updateShip: updateShip,
 	updateBullet: updateBullet,
 	Ship: Ship,
 	getBounds: getBounds,
 	pointInRect: pointInRect,
 	damageShip: damageShip,
-	respawnShip: respawnShip
+	respawnShip: respawnShip,
+	updateInput: updateInput,
+	Bomb: Bomb,
+	Bullet: Bullet
 };

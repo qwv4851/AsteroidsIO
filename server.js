@@ -33,7 +33,8 @@ io.sockets.on('connection', function(socket) {
 	}
 
 	clients[socket.id] = {
-		ship: new game.Ship()
+		ship: new game.Ship(),
+		keys: []
 	};
 	clients[socket.id].ship.color = colors[colorIndex++ % colors.length];
 	addShip(socket.id, clients[socket.id].ship);
@@ -44,46 +45,14 @@ io.sockets.on('connection', function(socket) {
 		delete clients[socket.id];
 	});
 
-	socket.on('shoot', function() {
-		var ship = clients[socket.id].ship;
-		var bullet = game.shoot(ship);
-		var id = bulletId++;
-		bullets[id] = bullet;
-		io.sockets.emit("addBullet", id, bullet);
-		setTimeout(function() {
-			removeBullet(id);
-		}, bombLifeTime);
+	socket.on('keydown', function(keyCode) {
+		clients[socket.id].keys[keyCode] = true;
+		console.log(keyCode + " up");
 	});
 
-	socket.on('shootBomb', function() {
-		var ship = clients[socket.id].ship;
-		var bomb = game.shootBomb(ship);
-		var id = bombId++;
-		bombs[id] = bomb;
-		io.sockets.emit("addBomb", id, bomb);
-		setTimeout(function() {
-			removeBomb(id);
-		}, bombLifeTime);
-	});
-
-	socket.on('moveLeft', function() {
-		var ship = clients[socket.id].ship;
-		game.moveLeft(ship);
-	});
-
-	socket.on('moveRight', function() {
-		var ship = clients[socket.id].ship;
-		game.moveRight(ship);
-	});
-
-	socket.on('moveUp', function() {
-		var ship = clients[socket.id].ship;
-		game.moveUp(ship);
-	});
-
-	socket.on('moveDown', function() {
-		var ship = clients[socket.id].ship;
-		game.moveDown(ship);
+	socket.on('keyup', function(keyCode) {
+		clients[socket.id].keys[keyCode] = false;
+		console.log(keyCode);
 	});
 
 	socket.on('message', function(message) {
@@ -101,12 +70,61 @@ updateLoop = (function() {
 	return function() {
 		loops = 0;
 		while (new Date().getTime() > nextGameTick && loops < maxFrameSkip) {
+			for (var i in clients) {
+				updateClient(clients[i]);
+			}
 			update();
 			nextGameTick += skipTicks;
 			loops++;
 		}
 	};
 })();
+
+function updateClient(client) {
+	game.updateInput(client.keys, client.ship);
+	var bullet = tryShoot(client.keys, client.ship);
+	if (bullet) {
+		console.log("bullet");
+		var id = bulletId++;
+		bullets[id] = bullet;
+		io.sockets.emit("addBullet", id, bullet);
+		setTimeout(function() {
+			removeBullet(id);
+		}, bulletLifetime);
+	}
+	var bomb = tryShootBomb(client.keys, client.ship);
+	if (bomb) {
+		var id = bombId++;
+		bombs[id] = bomb;
+		io.sockets.emit("addBomb", id, bomb);
+		setTimeout(function() {
+			removeBomb(id);
+		}, bombLifeTime);
+	}
+}
+
+function tryShoot(keys, ship) {
+	//console.log(ship.canFire);
+	if (keys[32] && ship.canFire) {
+		var bullet = new game.Bullet(ship);
+		setTimeout(function() {
+			ship.canFire = true;
+		}, bullet.timeout);
+		ship.canFire = false;
+		return bullet;
+	}
+}
+
+function tryShootBomb(keys, ship) {
+	if (keys[66] && ship.canFireBomb) {
+		var bomb = new game.Bomb(ship);
+		setTimeout(function() {
+			ship.canFireBomb = true;
+		}, bomb.timeout);
+		ship.canFireBomb = false;
+		return bomb;
+	}
+}
 
 function addShip(id, ship) {
 	io.sockets.emit('addShip', id, ship);
