@@ -16,13 +16,14 @@ app.get(/^(.+)$/, function(req, res) {
 	res.sendfile(__dirname + req.params[0]);
 });
 
+// Global setting variables
 var clients = {};
 var bullets = [];
 var bulletId = 0;
-var bulletLifetime = 3000;
+var bulletLifetime = 500;
 var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
 var colorIndex = 0;
- 
+
 io.sockets.on('connection', function(socket) {
 	if (Object.keys(clients).length === 0) {
 		io.sockets.emit('reset');

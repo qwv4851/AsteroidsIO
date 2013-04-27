@@ -231,8 +231,15 @@ function pointInRect(p, r) {
 }
 
 function drawBullet(bullet) {
+	ctx.save();
 	ctx.fillStyle = bullet.owner.color;
-	ctx.fillRect(bullet.pos.x - 2, bullet.pos.y - 2, bullet.scale, bullet.scale);
+	ctx.beginPath();
+	ctx.arc(bullet.pos.x, bullet.pos.y, 3, 0, 2 * Math.PI, false);
+	ctx.strokeStyle = 'white';
+	ctx.lineWidth = 2;
+	ctx.stroke();
+	ctx.fill();
+	ctx.restore();
 }
 
 function moveLeft(ship) {
