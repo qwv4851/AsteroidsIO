@@ -22,7 +22,7 @@ var bulletId = 0;
 var bulletLifetime = 3000;
 var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
 var colorIndex = 0;
-
+ 
 io.sockets.on('connection', function(socket) {
 	if (Object.keys(clients).length === 0) {
 		io.sockets.emit('reset');
@@ -54,25 +54,21 @@ io.sockets.on('connection', function(socket) {
 	socket.on('moveLeft', function() {
 		var ship = clients[socket.id].ship;
 		game.moveLeft(ship);
-		addShip(socket.id, ship);
 	});
 
 	socket.on('moveRight', function() {
 		var ship = clients[socket.id].ship;
 		game.moveRight(ship);
-		addShip(socket.id, ship);
 	});
 
 	socket.on('moveUp', function() {
 		var ship = clients[socket.id].ship;
 		game.moveUp(ship);
-		addShip(socket.id, ship);
 	});
 
 	socket.on('moveDown', function() {
 		var ship = clients[socket.id].ship;
 		game.moveDown(ship);
-		addShip(socket.id, ship);
 	});
 
 	socket.on('message', function(message) {

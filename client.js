@@ -116,7 +116,7 @@ function draw() {
 function drawShips() {
 	for (var i in ships) {
 		var ship = ships[i];
-		var color = i == "localShip" ? "red" : ship.color;
+		var color = i == "localShip" ? "red" : (debug ? "white" : ship.color);
 		drawShip(ship.pos, ship.angle, color);
 	}
 }
