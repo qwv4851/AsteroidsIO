@@ -36,7 +36,7 @@ function Ship() {
 	this.speed = 0.2,
 	this.rotSpeed = 0.2;
 	this.maxSpeed = 10;
-	this.maxLife = 100;
+	this.maxLife = 10;
 	this.life = this.maxLife;
 	this.color = "#fff";
 }
@@ -228,7 +228,7 @@ function updateInput() {
 		if (localShip) moveDown(localShip);
 	}
 
-	if(canFireBomb) {
+	if (canFireBomb) {
 		if (keys[66]) {
 			setTimeout(function() {
 				canFireBomb = true;
