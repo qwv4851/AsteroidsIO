@@ -63,19 +63,15 @@ io.sockets.on('connection', function(socket) {
 });
 
 updateLoop = (function() {
-	var loops = 0,
-		skipTicks = 1000 / game.fps,
-		maxFrameSkip = 10,
-		nextGameTick = new Date().getTime();
+	skipTicks = 1000 / game.fps,
+	nextGameTick = new Date().getTime();
 	return function() {
-		loops = 0;
-		while (new Date().getTime() > nextGameTick && loops < maxFrameSkip) {
+		while (new Date().getTime() > nextGameTick) {
 			for (var i in clients) {
 				updateClient(clients[i]);
 			}
 			update();
 			nextGameTick += skipTicks;
-			loops++;
 		}
 	};
 })();

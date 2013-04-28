@@ -130,11 +130,11 @@ function initSocket() {
 updateLoop = (function() {
 	var loops = 0,
 		skipTicks = 1000 / fps,
-		maxFrameSkip = 10,
+		maxFrameSkip = 1000,
 		nextGameTick = new Date().getTime();
 	return function() {
 		loops = 0;
-		while (new Date().getTime() > nextGameTick && loops < maxFrameSkip) {
+		while (new Date().getTime() > nextGameTick) {
 			update();
 			nextGameTick += skipTicks;
 			loops++;
