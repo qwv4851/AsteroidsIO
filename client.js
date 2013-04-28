@@ -39,25 +39,103 @@ function Ship() {
 	this.color = "#fff";
 	this.canFire = true;
 	this.canFireBomb = true;
+
+	this.update = function() {
+		addVec(this.pos, this.velocity);
+		fixBounds(this.pos);
+	};
+
+	this.draw = function(color) {
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		var scale = 2;
+		var p = [{
+			x: -3,
+			y: 4
+		}, {
+			x: 7,
+			y: 0
+		}, {
+			x: -3,
+			y: -4
+		}];
+		var rotated = [];
+		for (var i = 0; i < 3; i++) {
+			var r = rotateVec(p[i]);
+			rotated[i] = {};
+			rotated[i].x = this.pos.x + (p[i].x * Math.cos(this.angle) - p[i].y * Math.sin(this.angle)) * scale;
+			rotated[i].y = this.pos.y + (p[i].y * Math.cos(this.angle) + p[i].x * Math.sin(this.angle)) * scale;
+		}
+		drawLine(rotated[0], rotated[1]);
+		drawLine(rotated[0], rotated[2]);
+		drawLine(rotated[1], rotated[2]);
+	};
+
+	this.damage = function(damage) {
+		this.life -= damage;
+		this.life = clamp(this.life, 0, this.maxLife);
+	}
+
+	this.respawn = function() {
+		this.life = this.maxLife;
+		this.pos = {
+			x: 200,
+			y: 200
+		};
+	}
 }
 
 function Bullet(ship) {
-	this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
-	this.angle = ship.angle;
+	if (ship) {
+		this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
+		this.owner = ship;
+		this.angle = ship.angle;
+	}
 	this.speed = 12;
 	this.scale = 3;
-	this.owner = ship;
 	this.damage = 1;
 	this.timeout = 250;
+
+	this.draw = function() {
+		ctx.save();
+		ctx.fillStyle = this.owner.color;
+		ctx.beginPath();
+		ctx.arc(this.pos.x, this.pos.y, this.scale, 0, 2 * Math.PI, false);
+		ctx.strokeStyle = 'white';
+		ctx.lineWidth = Math.max(this.scale / 2, 2);
+		ctx.stroke();
+		ctx.fill();
+		ctx.restore();
+	};
+
+	this.update = function() {
+		var r = rotateScalar(this.speed, this.angle);
+		addVec(this.pos, r);
+		fixBounds(this.pos);
+	};
 }
 
 function Bomb(ship) {
-	this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
-	this.angle = ship.angle;
+	if (ship) {
+		this.pos = addVec(clone(ship.pos), rotateScalar(5, ship.angle));
+		this.owner = ship;
+		this.angle = ship.angle;
+	}
 	this.speed = 6;
 	this.scale = 5;
-	this.owner = ship;
 	this.timeout = 2500;
+
+	this.drawBomb = function() {
+		ctx.save();
+		ctx.fillStyle = this.owner.color;
+		ctx.beginPath();
+		ctx.arc(this.pos.x, this.pos.y, this.scale, 0, 2 * Math.PI, false);
+		ctx.strokeStyle = 'white';
+		ctx.lineWidth = Math.max(this.scale / 2, 2);
+		ctx.stroke();
+		ctx.fill();
+		ctx.restore();
+	};
 }
 
 if (typeof(document) != "undefined") $(document).ready(function() {
@@ -99,12 +177,16 @@ function initSocket() {
 		delete ships[id];
 	});
 	socket.on('addShip', function(id, ship) {
-		ships[id] = ship;
+		if (ships[id] === undefined) {
+			ships[id] = mergeObjects(new Ship(), ship);
+		} else {
+			ships[id] = mergeObjects(ships[id], ship);
+		}
 	});
 
 	// Bullet
 	socket.on('addBullet', function(id, bullet) {
-		bullets[id] = bullet;
+		bullets[id] = mergeObjects(new Bullet(), bullet);
 	});
 	socket.on('removeBullet', function(id) {
 		delete bullets[id];
@@ -112,7 +194,7 @@ function initSocket() {
 
 	// Bomb
 	socket.on('addBomb', function(id, bomb) {
-		bombs[id] = bomb;
+		bombs[id] = mergeObjects(new Bomb(), bomb);
 	});
 	socket.on('removeBomb', function(id) {
 		delete bombs[id];
@@ -156,7 +238,7 @@ function drawShips() {
 	for (var i in ships) {
 		var ship = ships[i];
 		var color = i == "localShip" ? "red" : (debug ? "white" : ship.color);
-		drawShip(ship.pos, ship.angle, color);
+		ship.draw(color);
 	}
 }
 
@@ -184,16 +266,14 @@ function drawLifebar(ship) {
 }
 
 function drawBullets() {
-	ctx.fillStyle = "white";
 	for (var i in bullets) {
-		drawBullet(bullets[i]);
+		bullets[i].draw();
 	}
 }
 
 function drawBombs() {
-	ctx.fillStyle = "white";
 	for (var i in bombs) {
-		drawBomb(bombs[i]);
+		bombs[i].draw();
 	}
 }
 
@@ -226,20 +306,13 @@ function updateInput(keys, ship) {
 
 function updateShips() {
 	for (var i in ships) {
-		var ship = ships[i];
-		updateShip(ship);
+		ships[i].update();
 	}
-}
-
-function updateShip(ship) {
-	addVec(ship.pos, ship.velocity);
-	fixBounds(ship.pos);
 }
 
 function updateBullets() {
 	for (var i in bullets) {
-		var bullet = bullets[i];
-		updateBullet(bullet);
+		bullets[i].update();
 	}
 }
 
@@ -248,18 +321,6 @@ function updateBombs() {
 		var bomb = bombs[i];
 		updateBomb(bomb);
 	}
-}
-
-function updateBullet(bullet) {
-	var r = rotateScalar(bullet.speed, bullet.angle);
-	addVec(bullet.pos, r);
-	fixBounds(bullet.pos);
-}
-
-function updateBomb(bomb) {
-	var r = rotateScalar(bomb.speed, bomb.angle);
-	addVec(bomb.pos, r);
-	fixBounds(bomb.pos);
 }
 
 function getBounds(ship, offset) {
@@ -273,30 +334,6 @@ function getBounds(ship, offset) {
 
 function pointInRect(p, r) {
 	return p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
-}
-
-function drawBullet(bullet) {
-	ctx.save();
-	ctx.fillStyle = bullet.owner.color;
-	ctx.beginPath();
-	ctx.arc(bullet.pos.x, bullet.pos.y, bullet.scale, 0, 2 * Math.PI, false);
-	ctx.strokeStyle = 'white';
-	ctx.lineWidth = Math.max(bullet.scale / 2, 2);
-	ctx.stroke();
-	ctx.fill();
-	ctx.restore();
-}
-
-function drawBomb(bomb) {
-	ctx.save();
-	ctx.fillStyle = bomb.owner.color;
-	ctx.beginPath();
-	ctx.arc(bomb.pos.x, bomb.pos.y, bomb.scale, 0, 2 * Math.PI, false);
-	ctx.strokeStyle = 'white';
-	ctx.lineWidth = Math.max(bomb.scale / 2, 2);
-	ctx.stroke();
-	ctx.fill();
-	ctx.restore();
 }
 
 function moveLeft(ship) {
@@ -361,32 +398,6 @@ function clamp(x, min, max) {
 	return x;
 }
 
-function drawShip(pos, angle, color) {
-	ctx.strokeStyle = color;
-	ctx.beginPath();
-	var scale = 2;
-	var p = [{
-		x: -3,
-		y: 4
-	}, {
-		x: 7,
-		y: 0
-	}, {
-		x: -3,
-		y: -4
-	}];
-	var rotated = [];
-	for (var i = 0; i < 3; i++) {
-		var r = rotateVec(p[i]);
-		rotated[i] = {};
-		rotated[i].x = pos.x + (p[i].x * Math.cos(angle) - p[i].y * Math.sin(angle)) * scale;
-		rotated[i].y = pos.y + (p[i].y * Math.cos(angle) + p[i].x * Math.sin(angle)) * scale;
-	}
-	drawLine(rotated[0], rotated[1]);
-	drawLine(rotated[0], rotated[2]);
-	drawLine(rotated[1], rotated[2]);
-}
-
 function drawLine(p0, p1) {
 	ctx.moveTo(p0.x, p0.y);
 	ctx.lineTo(p1.x, p1.y);
@@ -400,17 +411,15 @@ function clone(o) {
 	};
 }
 
-function damageShip(ship, damage) {
-	ship.life -= damage;
-	ship.life = clamp(ship.life, 0, ship.maxLife);
-}
-
-function respawnShip(ship) {
-	ship.life = ship.maxLife;
-	ship.pos = {
-		x: 200,
-		y: 200
-	};
+function mergeObjects(obj1, obj2) {
+	var obj3 = {};
+	for (var attrname in obj1) {
+		obj3[attrname] = obj1[attrname];
+	}
+	for (var attrname in obj2) {
+		obj3[attrname] = obj2[attrname];
+	}
+	return obj3;
 }
 
 if (typeof(module) != "undefined") module.exports = {
@@ -427,13 +436,9 @@ if (typeof(module) != "undefined") module.exports = {
 	clone: clone,
 	fps: fps,
 	bounds: bounds,
-	updateShip: updateShip,
-	updateBullet: updateBullet,
 	Ship: Ship,
 	getBounds: getBounds,
 	pointInRect: pointInRect,
-	damageShip: damageShip,
-	respawnShip: respawnShip,
 	updateInput: updateInput,
 	Bomb: Bomb,
 	Bullet: Bullet

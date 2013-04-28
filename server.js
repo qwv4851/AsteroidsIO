@@ -47,12 +47,10 @@ io.sockets.on('connection', function(socket) {
 
 	socket.on('keydown', function(keyCode) {
 		clients[socket.id].keys[keyCode] = true;
-		console.log(keyCode + " up");
 	});
 
 	socket.on('keyup', function(keyCode) {
 		clients[socket.id].keys[keyCode] = false;
-		console.log(keyCode);
 	});
 
 	socket.on('message', function(message) {
@@ -80,7 +78,6 @@ function updateClient(client) {
 	game.updateInput(client.keys, client.ship);
 	var bullet = tryShoot(client.keys, client.ship);
 	if (bullet) {
-		console.log("bullet");
 		var id = bulletId++;
 		bullets[id] = bullet;
 		io.sockets.emit("addBullet", id, bullet);
@@ -100,7 +97,6 @@ function updateClient(client) {
 }
 
 function tryShoot(keys, ship) {
-	//console.log(ship.canFire);
 	if (keys[32] && ship.canFire) {
 		var bullet = new game.Bullet(ship);
 		setTimeout(function() {
@@ -144,7 +140,7 @@ function update() {
 function updateShips() {
 	for (var i in clients) {
 		var ship = clients[i].ship;
-		game.updateShip(ship);
+		ship.update();
 		addShip(i, ship);
 	}
 }
@@ -152,7 +148,7 @@ function updateShips() {
 function updateBullets() {
 	for (var i in bullets) {
 		var bullet = bullets[i];
-		game.updateBullet(bullets[i]);
+		bullet.update();
 		checkCollision(bullet, i);
 	}
 }
@@ -163,9 +159,9 @@ function checkCollision(bullet, id) {
 		if (bullet.owner === ship) continue;
 		if (game.pointInRect(bullet.pos, game.getBounds(ship, 10))) {
 			removeBullet(id);
-			game.damageShip(ship, bullet.damage);
+			ship.damage(bullet.damage);
 			if (ship.life <= 0) {
-				game.respawnShip(ship);
+				ship.respawn();
 			}
 		}
 	}

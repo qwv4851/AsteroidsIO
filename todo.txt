@@ -1,2 +1,8 @@
+-Features-
+Colored names in chat.
+Join/leave notifications.
+Invulnerability 
+Leaderboard
+
+-Bugs-
 Fix bullet spawn location.
-Fix game loop buffering when out of focus.
