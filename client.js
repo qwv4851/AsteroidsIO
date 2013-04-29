@@ -125,7 +125,7 @@ function Bomb(ship) {
 	this.scale = 5;
 	this.timeout = 2500;
 
-	this.drawBomb = function() {
+	this.draw = function() {
 		ctx.save();
 		ctx.fillStyle = this.owner.color;
 		ctx.beginPath();
@@ -135,6 +135,12 @@ function Bomb(ship) {
 		ctx.stroke();
 		ctx.fill();
 		ctx.restore();
+	};
+
+	this.update = function() {
+		var r = rotateScalar(this.speed, this.angle);
+		addVec(this.pos, r);
+		fixBounds(this.pos);
 	};
 }
 
@@ -318,8 +324,7 @@ function updateBullets() {
 
 function updateBombs() {
 	for (var i in bombs) {
-		var bomb = bombs[i];
-		updateBomb(bomb);
+		bombs[i].update();
 	}
 }
 
