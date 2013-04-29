@@ -14,7 +14,15 @@ $(document).ready(function() {
 	}
 
 	socket.on('addMessage', function(name, color, message) {
-		addMessage(name, color, message);
+		addMessage(name + ": ", color, message);
+	});
+
+	socket.on('userJoined', function(name, color) {
+		addMessage(name + " has joined the space battle!", color);
+	});
+
+	socket.on('setUsername', function(name) {
+		nameField.val(name);
 	});
 
 	sendBtn.click(function() {

@@ -26,6 +26,7 @@ var bulletLifetime = 500;
 var bombLifeTime = 1000;
 var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
 var colorIndex = 0;
+var guestId = 0;
 
 io.sockets.on('connection', function(socket) {
 	if (Object.keys(clients).length === 0) {
@@ -36,9 +37,14 @@ io.sockets.on('connection', function(socket) {
 		ship: new game.Ship(),
 		keys: []
 	};
-	clients[socket.id].ship.color = colors[colorIndex++ % colors.length];
+	var color = colors[colorIndex++ % colors.length];
+	clients[socket.id].ship.color = color;
 	addShip(socket.id, clients[socket.id].ship);
 	socket.emit('setMyShip', socket.id);
+
+	var username = 'Guest'+guestId++;
+	socket.emit('setUsername', username);
+	io.sockets.emit('userJoined', username, color);
 
 	socket.on('disconnect', function() {
 		io.sockets.emit("removeShip", socket.id);
