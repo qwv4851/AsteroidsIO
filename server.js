@@ -53,8 +53,9 @@ io.sockets.on('connection', function(socket) {
 		clients[socket.id].keys[keyCode] = false;
 	});
 
-	socket.on('message', function(message) {
-		socket.broadcast.send(message);
+	socket.on('addMessage', function(name, message) {
+		var color = clients[socket.id].ship.color;
+		io.sockets.emit('addMessage', name, color, message);
 	});
 
 	setInterval(updateLoop, 0);

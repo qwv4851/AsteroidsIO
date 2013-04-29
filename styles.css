@@ -5,7 +5,9 @@
 	margin: 0;
 	background: black;
 	color: white;
-	border: 2px solid
+	border: 2px solid;
+	overflow-x: hidden;
+	overflow-y: auto;
 }
 
 #messageField {

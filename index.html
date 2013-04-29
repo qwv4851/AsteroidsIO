@@ -13,8 +13,12 @@
 	</span><br>
 	<span>Name:</span><input id="nameField" value="Anonymous"></input><button id="hideChatBtn">Hide Chat</button><br>
 	<div id="chatDiv">
-		<textarea id="messageArea" readonly="true"></textarea><br>
+		<div id="messageArea" readonly="true"></div><br>
 		<input id="messageField"></input><button id="sendBtn">Send</button>
 	</div>
 </body>
+<template id="message"><div>
+	<span id="head" style="color:#f00"><span id="name">Test Name</span>: </span>
+	<span id="body">Test Message</span>
+</div></template>
 </html>
