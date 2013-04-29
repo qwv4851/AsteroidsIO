@@ -8,6 +8,7 @@
 	border: 2px solid;
 	overflow-x: hidden;
 	overflow-y: auto;
+	word-wrap: break-word;
 }
 
 #messageField {
