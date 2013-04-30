@@ -21,12 +21,9 @@ var bounds = {
 var myId;
 var keys = [];
 
-function Ship() {
+function Ship(id) {
+	this.id = id;
 	this.angle = 0;
-	this.pos = {
-		x: 200,
-		y: 200
-	};
 	this.velocity = {
 		x: 0,
 		y: 0
@@ -36,9 +33,9 @@ function Ship() {
 	this.maxSpeed = 10;
 	this.maxLife = 10;
 	this.life = this.maxLife;
-	this.color = "#fff";
 	this.canFire = true;
 	this.canFireBomb = true;
+	this.color = '#fff';
 
 	this.update = function() {
 		addVec(this.pos, this.velocity);
@@ -72,9 +69,10 @@ function Ship() {
 	};
 
 	this.damage = function(damage) {
+		if (this.invulnerable) return;
 		this.life -= damage;
 		this.life = clamp(this.life, 0, this.maxLife);
-	}
+	};
 
 	this.respawn = function() {
 		this.life = this.maxLife;
@@ -82,7 +80,26 @@ function Ship() {
 			x: 200,
 			y: 200
 		};
-	}
+		this.invulnerable = true;
+
+		function setDisplay(color) {
+			return function() {
+				this.displayColor = color;
+			};
+		}
+		var flashDelay = 150;
+		var loops = 8;
+		if (isClient()) {
+			this.displayColor = this.color;
+			for (var i = 0; i < loops; i++) {
+				$(this).delay(flashDelay).show(0, setDisplay('#fff')).delay(flashDelay).show(0, setDisplay(this.color));
+			}
+		}
+		var that = this;
+		setTimeout(function() {
+			that.invulnerable = false;
+		}, flashDelay * 2 * loops);
+	};
 }
 
 function Bullet(ship) {
@@ -170,7 +187,7 @@ function resetGame() {
 	bullets = [];
 	bombs = [];
 	if (debug) {
-		localShip = new Ship();
+		localShip = new Ship("localShip");
 		ships["localShip"] = localShip;
 	}
 }
@@ -182,13 +199,24 @@ function initSocket() {
 	socket.on('removeShip', function(id) {
 		delete ships[id];
 	});
-	socket.on('addShip', function(id, ship) {
+	socket.on('addShip', function (id, ship) {
+		ship.displayColor = ship.color;
+		updateShip(id, ship);
+	});
+
+	socket.on('updateShip', updateShip);
+
+	socket.on('respawn', function(id) {
+		ships[id].respawn();
+	});
+
+	function updateShip(id, ship) {
 		if (ships[id] === undefined) {
-			ships[id] = mergeObjects(new Ship(), ship);
+			ships[id] = mergeObjects(new Ship(id), ship);
 		} else {
 			ships[id] = mergeObjects(ships[id], ship);
 		}
-	});
+	}
 
 	// Bullet
 	socket.on('addBullet', function(id, bullet) {
@@ -243,7 +271,7 @@ function draw() {
 function drawShips() {
 	for (var i in ships) {
 		var ship = ships[i];
-		var color = i == "localShip" ? "red" : (debug ? "white" : ship.color);
+		var color = i == "localShip" ? "red" : (debug ? "white" : ship.displayColor);
 		ship.draw(color);
 	}
 }
@@ -417,14 +445,14 @@ function clone(o) {
 }
 
 function mergeObjects(obj1, obj2) {
-	var obj3 = {};
-	for (var attrname in obj1) {
-		obj3[attrname] = obj1[attrname];
-	}
 	for (var attrname in obj2) {
-		obj3[attrname] = obj2[attrname];
+		obj1[attrname] = obj2[attrname];
 	}
-	return obj3;
+	return obj1;
+}
+
+function isClient() {
+	return typeof($) != "undefined";
 }
 
 if (typeof(module) != "undefined") module.exports = {

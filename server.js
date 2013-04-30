@@ -24,7 +24,7 @@ var bulletId = 0;
 var bombId = 0;
 var bulletLifetime = 500;
 var bombLifeTime = 1000;
-var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff", "#fff"];
+var colors = ["#f00", "#0f0", "#00f", "#f0f", "#ff0", "#0ff"];
 var colorIndex = 0;
 var guestId = 0;
 
@@ -34,15 +34,20 @@ io.sockets.on('connection', function(socket) {
 	}
 
 	clients[socket.id] = {
-		ship: new game.Ship(),
+		ship: new game.Ship(socket.id),
 		keys: []
 	};
+	var ship = clients[socket.id].ship;
 	var color = colors[colorIndex++ % colors.length];
-	clients[socket.id].ship.color = color;
-	addShip(socket.id, clients[socket.id].ship);
+	ship.color = color;
+	for (var i in clients) {
+		addShip(i, clients[i].ship);
+	}
+	ship.respawn();
+	io.sockets.emit('respawn', socket.id);
 	socket.emit('setMyShip', socket.id);
 
-	var username = 'Guest'+guestId++;
+	var username = 'Guest' + guestId++;
 	socket.emit('setUsername', username);
 	io.sockets.emit('userJoined', username, color);
 
@@ -148,7 +153,7 @@ function updateShips() {
 	for (var i in clients) {
 		var ship = clients[i].ship;
 		ship.update();
-		addShip(i, ship);
+		io.sockets.emit('updateShip', i, ship);
 	}
 }
 
@@ -169,6 +174,7 @@ function checkCollision(bullet, id) {
 			ship.damage(bullet.damage);
 			if (ship.life <= 0) {
 				ship.respawn();
+				io.sockets.emit('respawn', j);
 			}
 		}
 	}
